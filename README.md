@@ -119,12 +119,12 @@ Investigation of biological functions and pathways:
 
 ---
 
-## [🙏 miRNA-lipid integration (mixOmics)](integration_mixomics/README.md)
+## [🙏 miRNA-lipid integration (mixOmics)](AUD_REPORT.Rmd)
 Integration of miRNA and lipidomics datasets using **mixOmics**:
 - Partial Least Squares (**PLS**) to explore miRNA–lipid correlations
 - **block.sPLS** for multi-omics integration and feature selection
 
-👉 See the file [`integration_mixomics/README.md`](integration_mixomics/README.md)
+👉 See the file [`integration_mixomics/README.md`](AUD_REPORT.Rmd)
 
 ## [💻 Shiny App](shiny_app/README.md)
 Interactive web application built with **Shiny** to explore:
