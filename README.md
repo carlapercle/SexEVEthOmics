@@ -96,24 +96,17 @@ hsa-let-7b-5p       643
 Once the unique counts (`*_unique_counts.txt`) have been generated, the analysis continues in **R**.  
 The following sections link to the scripts or notebooks available in this repository.
 
-### [🧹 Preprocessing](preprocessing/README.md)
-Description of the **preprocessing** steps performed in R:
+### [📊 Preprocessing and Differential Expression Analysis](miRNA_DESEQ2.html)
+Description of the **preprocessing** and **differential expression analysis** steps performed in R:
 - Import of count tables
 - Low-expression filtering
 - Normalization
 - Exploratory Data Analysis
-
-👉 See the file [`preprocessing/README.md`](preprocessing/README.md)
-
----
-
-### [📊 Differential Expression Analysis](differential_expression/README.md)
-Steps for **differential expression analysis** (miRNAs):
 - Model design
-- Use of `DESeq2`, `edgeR`, or similar packages
-- Extraction of log2FC, p-values, and BH
+-`DESeq2`
+- Results
 
-👉 See the file [`differential_expression/README.md`](differential_expression/README.md)
+👉 See the file [`preprocessing/README.md`](miRNA_DESEQ2.html)
 
 ---
 
@@ -126,14 +119,14 @@ Investigation of biological functions and pathways:
 
 ---
 
-## [🙏 miRNA-lipid integration (mixOmics)] (integration_mixomics/README.md)
+## [🙏 miRNA-lipid integration (mixOmics)](integration_mixomics/README.md)
 Integration of miRNA and lipidomics datasets using **mixOmics**:
 - Partial Least Squares (**PLS**) to explore miRNA–lipid correlations
 - **block.sPLS** for multi-omics integration and feature selection
 
 👉 See the file [`integration_mixomics/README.md`](integration_mixomics/README.md)
 
-### [💻 Shiny App](shiny_app/README.md)
+## [💻 Shiny App](shiny_app/README.md)
 Interactive web application built with **Shiny** to explore:
 - Normalized counts and sample metadata
 - Differential expression tables and volcano plots
