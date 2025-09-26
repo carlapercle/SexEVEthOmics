@@ -14,8 +14,6 @@ The pipeline performs:
 2. Mapping to the reference genome/index  
 3. Counting **unique** mapped reads
 
----
-
 #### 1. Adapter Trimming & Quality Filtering
 Remove Illumina adapters, trim low-quality bases, and retain reads of 17–35 nt.
 
@@ -91,6 +89,7 @@ hsa-miR-21-5p       982
 hsa-let-7b-5p       643
 ...
 ```
+---
 ## 🔎 miRNA Downstream Analyses
 
 Once the unique counts (`*_unique_counts.txt`) have been generated, the analysis continues in **R**.  
@@ -109,7 +108,6 @@ Description of the **preprocessing** and **differential expression analysis** st
 👉 See the file [`preprocessing/README.md`](miRNA_DESEQ2.html)
 
 ---
-
 ### [🔬 Functional Analysis](functional_analysis/README.md)
 Investigation of biological functions and pathways:
 - Prediction of target genes
@@ -126,15 +124,14 @@ Integration of miRNA and lipidomics datasets using **mixOmics**:
 
 👉 See the file [`integration_mixomics/README.md`](AUD_REPORT.Rmd)
 
-## [💻 Shiny App](shiny_app/README.md)
+## [💻 Shiny App](web_AUD_Carla)
 Interactive web application built with **Shiny** to explore:
 - Normalized counts and sample metadata
 - Differential expression tables and volcano plots
 - Correlations between miRNAs and lipids (mixOmics integration)
 - Custom searches (e.g., by specific miRNA name)
 
-👉 See the folder [`shiny_app/`](shiny_app/) for:
-- [`app.R`](shiny_app/app.R): Main Shiny application
-- `ui.R`, `server.R`, or additional modules (if separated)
-- Supporting data files (`normalized_counts.RData`, `colData.RData`, etc.)
+👉 See the folder [`web_AUD_Carla/`](web_AUD_Carla/) for:
+- [`app_AUD.R`](web_AUD_Carla/app.R): Main Shiny application:`ui.R`, `server.R`
+- Supporting data files (`data`, `www`, etc.)
 
