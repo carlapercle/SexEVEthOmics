@@ -1,0 +1,435 @@
+---
+output:
+  html_document:
+    toc: true
+    toc_float:
+      collapsed: true
+      smooth_scroll: true
+    toc_depth: 4
+    number_sections: true
+    theme: cerulean
+    code_folding: hide
+    css: custom.css
+---
+
+
+```{=html}
+<style>
+body {
+text-align: justify}
+</style>
+```
+
+```{r}
+colorize <- function(color, text) {
+  paste0('<span style="color:', color, ';">', text, '</span>')
+}
+```
+
+[Unravelling Sex-based Differences Underlying Alcohol Effects: A Multi-Omics Integration Strategy from the Lipid and Gene Content of the Plasma Secretome.]{style="font-size:36px;color:#1c2e4a;"}
+
+**Author:** Carla Perpiñá-Clérigues
+
+**Date:** "`r Sys.Date()`"
+
+```{r , echo=FALSE, results='hide', message=FALSE}
+library(mixOmics)
+library(knitr)
+library(tidyverse)
+library(DT)
+library(kableExtra)
+library(manipulateWidget)
+```
+
+# Introduction and Data exploration
+
+-   **Main goal**: Combine lipid and transcriptomics data from extracellular vesicles to elucidated sex differences in the effect of alcohol.
+
+-   **Organism**: *Homo sapiens*
+
+-   **Data from**: AUD samples from Alcoholism Unit of the University Hospital of Salamanca (Spain), control samples from twelve healthy volunteers.
+
+## Data summary
+
+Load data:
+
+```{r load data , message=F, echo=FALSE}
+setwd("~cperpina/mixOmics/AUD/mature/")
+path <- "~cperpina/mixOmics/AUD/mature/"
+
+# Common samples between data sets
+load(paste0(path,"00Data/dataX.RData"))
+load(paste0(path,'00Data/metadata.RData'))
+
+load(paste0(path,"00Data/normalized_counts.RData"))
+load(paste0(path,"00Data/common.RData"))
+
+anot_samples <- read.table(file="~cperpina/mixOmics/AUD/00Data/anot_samples.tsv", sep = "\t", header = T)
+
+# Filtrar df_lipids para mantener solo las filas donde sample_RNA está en df_expression
+filtered_mirnas <- normalized_counts[,which(colnames(normalized_counts) %in% anot_samples$sample_RNA) ]
+colnames(filtered_mirnas) <- anot_samples$sample_int[match(colnames(filtered_mirnas), anot_samples$sample_RNA)]
+
+df_sorted_columns <- filtered_mirnas[, order(colnames(filtered_mirnas))]
+
+X$mirna <- t(df_sorted_columns)
+
+Y <- as.factor(metadata$group)
+
+# naniar::pct_miss(X$lipid) # NA < 20%
+# naniar::pct_miss(X$mirna) # NA < 0
+
+X$lipid <- impute.nipals(X = X$lipid, ncomp = 3) # usaré los imputed
+
+```
+
+```{r}
+# rownames(X.lipid)
+# rownames(X.mirna)
+
+metadata[c('treatment', 'sex')] <- str_split_fixed(metadata$group, '_', 2)
+```
+
+```{r}
+Y.int <- as.factor(metadata$group)
+Y.sex <- as.factor(metadata$sex)
+Y.treatment <- as.factor(metadata$treatment)
+
+sex.dummy <- unmap(Y.sex)
+treatment.dummy <- unmap(Y.treatment)
+condition.dummy <- unmap(Y.int)
+
+# condition.dummy <- unmap(sex.dummy * treatment.dummy)
+
+rownames(sex.dummy) <- metadata$sample_int
+rownames(treatment.dummy) <- metadata$sample_int
+rownames(condition.dummy) <- metadata$sample_int
+
+colnames(sex.dummy) <- levels(Y.sex)
+colnames(treatment.dummy) <- levels(Y.treatment)
+colnames(condition.dummy) <- levels(Y.int)
+
+Y.matrix2 <-  cbind(sex.dummy, treatment.dummy, condition.dummy)
+```
+
+```{r}
+Y <- list(Y.vector = Y, Y.dummy = Y.matrix2)
+rm(Y.matrix2, Y.int, Y.sex, Y.treatment,condition.dummy, sex.dummy,
+   treatment.dummy)
+```
+
+-   `X`: A list with the two matrix data (`X$mirna` miRNA and `X$lipid` lipid data). 18 rows and 272 and 575 columns respectively. These are the expression levels of 272 genes in 18 subjects and the lipid abundance in 575 lipids in **the same** subjects.
+
+    -   `X$mirna`: A matrix with 18 rows and 272 columns. These are the expression levels of 272 genes in 18 subjects.
+
+    -   `X$lipid`: A matrix with 18 rows and 575 columns. These are the abundance levels of 575 lipids in 18 subjects. Lipid NA were imputed in this case.
+
+-   `Y`: A list with:
+
+    -   `Y$vector`: A factor vector with 4 levesl corresponding to the 4 groups.
+
+    -   `Y$dummy`: A dummy matrix with 8 colums (female, male, AUD, C, AUD_female, AUD_male, C_female, C_male)
+
+## Global view
+
+Two predictors matrix with the same number of samples:
+
+```{r}
+head(X$mirna[,1:10])
+head(X$lipid[,1:10])
+```
+
+```{r,fig.show='hold', fig.ncol = 2, out.width="50%"}
+boxplot(log10(t(X$mirna)+1),ylab=expression('Log'[10]~'Read counts'),las=2,main="miRNA samples shared with lipids")
+boxplot(t(X$lipid), main = "Lipid samples shared with miRNA")
+```
+
+As we see, we have the same samples (same number of rows).
+
+```{r}
+lapply(X, dim)
+# length(Y)
+```
+
+Regarding the metadata, we also have the group, and the age information:
+
+-   *4 conditions/groups,* number of samples per group:
+
+```{r}
+table(metadata$group)
+```
+
+-   *Age* mean/median of age per group:
+
+```{r, eval=T}
+# Mean
+mean <- aggregate(metadata$Age, list(metadata$group), mean)
+colnames(mean) <- c("group", "age mean")
+
+# Median
+median <- aggregate(metadata$Age, list(metadata$group), median)
+colnames(median) <- c("group", "age median")
+
+merge(mean, median, by = "group")  %>% 
+  DT::datatable(escape = FALSE, rownames = F, filter = "none") %>%
+    formatRound(columns = 2, digits=2) 
+
+rm(mean, median)
+```
+
+The information for the different groups is presented in two formats, as a vector of 4 factors and as a dummy matrix where the conditions are detailed:
+
+```{r}
+unique(Y$Y.vector)
+```
+
+```{r}
+unique(Y$Y.dummy)
+```
+
+Now, we proceed to apply the different methodologies:
+
+# Analyses
+
+![](files/method.png)
+
+We tried different methodologies, but the ones that fit our data best are the following:
+
+## PLS as an exploratory analyses
+
+[Partial Least Squares, or Projection to Latent Structures](http://mixomics.org/methods/spls/), (PLS) is a robust, malleable multivariate projection-based method. It can be used to explore or explain the **relationship between two continuous datasets**. As with other projection methods, PLS seeks for linear combinations of the variables from each dataset in order to reduce the overall dimensionality of said data. The primary difference between PLS and PCA is that **PLS maximises the covariance between the latent variables**, rather than correlation. It is able to simultaneously model multiple response variables as well as handle noisy, correlated variables.
+
+**Multiple omics data sets integration**
+
+-   **Aim**: explore the relationship between continuous datasets.
+
+We have different datasets from the same samples but representing different omics, thus corresponding to **N-integration**. Also, Y is a matrix than include more than one variable (PLS2: Multivariate analysis).
+
+**Non-coding RNAs** have been identified as **key regulators** of **lipid metabolism**!:
+
+*Mode?* *Regression*, canonical, invariant, classic...
+
+-   Regression (mode = "regression"): X and Y play asymmetric roles. Fits a linear relationship between multiple responses in Y and multiple predictors in X. Interchanging the roles of X and Y (as predictors and responses) would result in different latent variables. Useful when trying to explain the relationship between the two datasets. Y is deflated using information from X.
+
+### sPLS mirna-lipid
+
+The two data sets (miRNA and lipid) as a continuous matrix.
+
+We use:
+
+-   `X$mirna`: A matrix with 18 rows and 272 columns. These are the expression levels of 272 genes in 18 subjects.
+
+-   `X$lipid`: A matrix with 18 rows and 575 columns. These are the abundance levels of 575 lipids in 18 subjects. Lipid NA were imputed in this case.
+
+We apply `spls` function: *Sparse* stands for loading vectors that are sparse (include zeros) because of we use lasso regularisation in the method so that only a subset of variables are used to calculate the components in the linear combination.
+
+```{r}
+set.seed(123) # for reproducibility
+
+# select arbitrary values of features to keep
+list.keepY = c(25, 25)
+list.keepX = c(25, 25)
+
+spls.result <- spls(X$mirna, # predictor
+                    X$lipid, # response (no)
+                    keepX = list.keepX, 
+                    keepY = list.keepY, 
+                    mode = "regression" )
+# run the method
+
+# The SGCCA algorithm did not converge --> This is a warning message that may appear when the number of components is large and there is not much information to glean from, say, comp 3
+```
+
+These plots help us determine similarities and differences between the two input datasets. In this case, we observe a high degree of similarity. The plots illustrate how the samples are generally well separated within their respective groups. It's worth noting that the control samples appear clustered together despite sex differences, unlike the AUD samples.
+
+```{r}
+plotIndiv(spls.result, group = metadata$group, legend = T, xlim = c(-17,8), 
+          ylim = c(-6,6),size.legend = 7, size.legend.title = 7, title = "Block: X miRNA, Block: Y lipid", cex = 4.5) # plot the samples
+```
+
+In general, we can conclude that the majority of the miRNA contributed negatively to the first component and positively to the second.
+
+```{r}
+plotVar(spls.result, 
+        # cutoff = 0.5,
+        legend = c("miRNA", "lipid"),
+        var.names = F, style = 'graphics',
+        pch = c(16, 17), cex = c(1,1),
+        col = c('#dd5129', '#fab255'))   # plot the variables
+```
+
+cor(spls.result$variates$X, spls.result$variates$Y) gives us the correlation coefficient between these two sets of variables transformed by spls. This correlation coefficient can provide information about the **linear relationship between the patterns identified in the X and Y data after applying the spls method**.
+
+We can see a higher correlation:
+
+```{r}
+cor(spls.result$variates$X, spls.result$variates$Y)
+
+# selectVar(spls.result, comp = 1)$X$name # extract the variables used to construct the first latent component
+```
+
+Loading plots in mixOmics provide information on the contribution of each original variable (e.g. genes, metabolites, etc.) to the components obtained through multivariate analysis methods. They facilitate the identification of variables relevant to the model, which can be useful to reduce dimensionality and focus the analysis on the most informative variables. The most relevant original variables (those with the greatest absolute loading value) will be at the bottom of the plot:
+
+```{r}
+plotLoadings(spls.result, method = 'mean', contrib = 'max', size.title = 1) # depict weight assigned to each of these variables
+```
+
+At this moment, we can conclude that there is a similarity between both types of omics in terms of separating the samples into their corresponding groups.
+
+## Integration (block.spls)
+
+We use:
+
+-   `X`(predictor matrix):
+
+    -   `X$mirna`: A matrix with 18 rows and 272 columns. These are the expression levels of 272 genes in 18 subjects.
+
+    -   `X$lipid`: A matrix with 18 rows and 575 columns. These are the abundance levels of 575 lipids in 18 subjects. Lipid NA were imputed in this case.
+
+-   `Y` (response matrix):
+
+    -   `Y$dummy`: A dummy matrix with 8 colums (female, male, AUD, C, AUD_female, AUD_male, C_female, C_male)
+
+
+Se realizaron varias pruebas modificando el número de variables seleccionadas para cada componente y cada ómica. Finalmente, al observar que la componente 1 estaba relacionada con el alcohol y la componente 2 con el sexo, se decidió seleccionar 6 features para cada una, eliminando la influencia del sexo en la componente 1 y la del alcohol en la componente 2. Para la componente 3, se seleccionaron 4 features. Considerando 20 features de miARN y lípidos para las componentes 1 y 2 respectivamente, y 10 para la componente 3, logrando en esta última explicar la variabilidad simulando un comportamiento de doble contraste, similar al enfoque de limma, con resultados de patrones totalmente revertidos por sexo en el contexto del alcohol.
+
+```{r}
+# set the number of features to use for the X datasets
+list.keepX = list(mirna = c(20, 20, 10), lipid = c(20, 20, 10))
+
+# set the number of features to use for the Y dataset
+list.keepY = c(6,6,4)
+
+block.spls.result <- block.spls(X, Y$Y.dummy, design = "full", # run the method
+                                keepX = list.keepX, keepY = list.keepY, ncomp = 3)
+
+
+```
+
+Aquí se muestran los gráficos básicos:
+```{r}
+plotLoadings(block.spls.result, method = 'mean', contrib = 'max', size.title = 1)
+
+plotLoadings(block.spls.result, method = 'mean', contrib = 'max', size.title = 1, comp = 2)
+
+plotLoadings(block.spls.result, method = 'mean', contrib = 'max', size.title = 1, comp = 3)
+```
+
+```{r}
+# plotVar(block.spls.result,  cutoff = 0.5, legend = TRUE, cex=c(4,4,4),  overlap = F)
+# 
+plotVar(block.spls.result,
+         cutoff = 0.5,
+         var.names = T,
+         pch = c(16, 17,15), cex = c(4,4,6),
+         title = "PLS Correlations - cutoff of 0.5")
+
+plotVar(block.spls.result, 
+         var.names = T,
+         pch = c(16, 17,15), cex = c(4,4,6),
+         title = "PLS Correlations")
+
+
+
+plotVar(block.spls.result, 
+         var.names = T,
+         pch = c(16, 17,15), cex = c(4,4,6),
+         title = "PLS Correlations",
+        comp = c(1,3))
+
+
+plotVar(block.spls.result, 
+         var.names = T,
+         pch = c(16, 17,15), cex = c(4,4,6),
+         title = "PLS Correlations",
+        comp = c(3,1))
+
+plotVar(block.spls.result, 
+         var.names = T,
+         pch = c(16, 17,15), cex = c(4,4,6),
+         title = "PLS Correlations",
+        comp = c(3,2))
+
+```
+
+We can see how the **Component 1** discriminates the control groups `r colorize("#009E73", "C_male")` `r colorize("#C2C2C2", "C_female")` vs. the AUD groups `r colorize("#F68B33", "AUD_male")` `r colorize("#388ECC", "AUD_female")`. Therefore, the miRNA and lipids appearing in the Loadings plots for Component 1 contribute to variations in response based on alcohol ingestion.
+
+Similarly, **Component 2** discriminates the male groups `r colorize("#009E73", "C_male")` `r colorize("#F68B33", "AUD_male")` vs. the female groups `r colorize("#C2C2C2", "C_female")` `r colorize("#388ECC", "AUD_female")`. Thus, the miRNA and lipids appearing in the Loadings plots for Component 2 contribute to variations in response based on sex.
+
+
+<p>
+
+::: info
+
+**ⓘ  Entender que nos indica cada  gráfico**
+
+**1.    plotVar (Variable Plot) El círculo.**
+
+El plotVar muestra la relación entre las variables (features) de los diferentes bloques de datos en el espacio de las componentes latentes. 
+
+En este gráfico:
+
+-   Las variables de ambos bloques (por ejemplo, miRNAs y lípidos) se proyectan en el espacio común definido por las componentes seleccionadas en el análisis (como el sPLS).
+
+-    Este plot es útil para visualizar la correlación o la similitud entre las variables (features) dentro de los diferentes bloques, permitiendo detectar patrones conjuntos.
+
+-    _Interpretación:_ Las variables que están más cercanas en el gráfico tienen una correlación más fuerte. Esto es útil para identificar asociaciones entre variables de diferentes tipos de datos (ej. entre un miRNA y un lípido).
+
+**2.    plotLoadings (Loading Plot) Las barras horizontales.**
+
+El plotLoadings, en cambio, muestra las cargas (loadings) de las variables para cada componente latente. 
+    
+En este gráfico:
+
+-    Se visualiza cómo contribuyen las diferentes variables (features) a las componentes seleccionadas. Las cargas indican la importancia o el peso de cada variable en la formación de cada componente.
+
+-    Generalmente, el plotLoadings te permite identificar cuáles son las variables más relevantes en cada componente latente.
+
+-    _Interpretación:_ Las variables con valores de carga más altos (positivos o negativos) son las que más contribuyen a esa componente. Esto puede ayudar a identificar variables clave que explican la mayor parte de la varianza en tus datos.
+
+`r colorize("#97572B", "**Diferencias clave**")`:
+
+**_Propósito_**: El plotVar muestra la relación y agrupación entre variables de diferentes bloques en el espacio de las componentes, mientras que el plotLoadings muestra las cargas de las variables, destacando las que más influyen en cada componente.
+
+**_Interpretación_**: En el plotVar, te enfocas en la asociación entre variables, mientras que en el plotLoadings te enfocas en la importancia de cada variable en la componente.
+
+Ambos gráficos proporcionan información complementaria en un análisis multiómico: el plotVar te permite ver cómo interactúan las variables de diferentes bloques, y el plotLoadings te ayuda a entender qué variables están conduciendo esas interacciones.
+:::
+
+</p>
+
+<p>
+
+::: info
+**ⓘ Where are the p-values?** Methods are multivariate, which means that we primarily focus on the whole signature, as a whole, rather than individual variables. It means, the methods focus on multivariate patterns and relationships rather than on testing individual variables in isolation. These methods are valuable for exploratory analysis and for identifying complex interactions within data that traditional p-value-based tests may not capture effectively. This is why you will never see a p-value in mixOmics.
+:::
+
+</p>
+
+# IDEA
+
+- `r colorize("#97572B", "**Componente 3: PANEL DE FEATURES QUE MUESTRAN UN PATRÓN REVERTIDO ENTRE SEXO**")`
+
+Coger el set de los de 10 miRNA, sacar los target genes y hacer un ORA. De ahí, buscar relaciones con los 10 lípidos.
+
+Se ha visto que se podría aplicar un mdgsa con el valor de los loadings, pero solo tendríamos 10 features, por lo que lo descartamos.
+
+
+De este apartado sacamos las DIFERENCIAS DE SEXO en el contexto del ALCOHOL, además se añade la representación de las medias y se ve un patrón de intersección. Esto se puede relacionar con los análisis univariantes del doble contraste.
+
+- `r colorize("#97572B", "**Componente 1 y 2**")`
+
+En lugar de fijarnos en los loadings, sacar la información del plotVar, donde se representan ambas y se correlacionan las diferentes ómicas, viendo la integración propiamiente dicha.
+
+Se entiende que el I cuadrante, corresponde a AUD male, el II a control male, el III a control female y el IV al AUD female. 
+
+Se propone hacer un ORA por cada cuadrante a partir de los micros y ya relacionarlo con los lípidos. 
+
+**diferencia**
+
+Centrarnos más en la componente 3 antes que en las otras dos.
+
+
+
+
+
