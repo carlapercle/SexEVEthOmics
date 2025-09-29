@@ -118,6 +118,7 @@ Investigation of biological functions and pathways:
 
 ## [🙏 miRNA-lipid integration (mixOmics)](AUD_REPORT.Rmd)
 Integration of miRNA and lipidomics datasets using **mixOmics**:
+- Lipid data available in [Zenodo](https://doi.org/10.5281/zenodo.8360144)
 - Partial Least Squares (**PLS**) to explore miRNA–lipid correlations
 - **block.sPLS** for multi-omics integration and feature selection
 
