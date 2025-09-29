@@ -107,7 +107,6 @@ Description of the **preprocessing** and **differential expression analysis** st
 
 👉 See the file [`preprocessing/README.md`](miRNA_DESEQ2.html)
 
----
 ### [🔬 Functional Analysis](functional_analysis/README.md)
 Investigation of biological functions and pathways:
 - Prediction of target genes
@@ -123,6 +122,8 @@ Integration of miRNA and lipidomics datasets using **mixOmics**:
 - **block.sPLS** for multi-omics integration and feature selection
 
 👉 See the file [`integration_mixomics/README.md`](AUD_REPORT.Rmd)
+
+---
 
 ## [💻 Shiny App](web_AUD_Carla)
 Interactive web application built with **Shiny** to explore:
