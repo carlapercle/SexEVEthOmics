@@ -4,7 +4,7 @@
 
 This repository contains the workflow used to process and analyze small RNA-seq data from the project:
 
-- **Data Source**: [PRJNA1291119](https://www.ncbi.nlm.nih.gov/bioproject?term=PRJNA1291119&cmd=DetailsSearch&report=docsum)
+- **Data Source**: [PRJNA1291119](https://www.ncbi.nlm.nih.gov/bioproject/PRJNA1291119)
 
 ---
 
