@@ -112,7 +112,7 @@ Investigation of biological functions and pathways:
 - Prediction of target genes
 - Enrichment analysis (GO, KEGG, Reactome)
 
-👉 See the file [`functional_analysis/README.md`](functional_analysis/README.md)
+👉 See the file [`functional_enrichment_mirna_v2.R`](functional_enrichment_mirna_v2.R)
 
 ---
 
