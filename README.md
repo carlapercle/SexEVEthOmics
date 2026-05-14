@@ -107,6 +107,19 @@ Description of the **preprocessing** and **differential expression analysis** st
 
 👉 See the file [`preprocessing/README.md`](miRNA_DESEQ2.html)
 
+**Note:** An additional log2 fold-change shrinkage step was applied after DESeq2 analysis using `lfcShrink()` from DESeq2 with the `ashr` method.
+
+Example (male comparison):
+
+```r
+resMale_shrunk <- lfcShrink(
+  dds,
+  contrast = c("Condition", "AUD_Male", "Control_Male"),
+  res = resMale,
+  type = "ashr"
+)
+```
+
 ### [🔬 Functional Analysis](functional_analysis/README.md)
 Investigation of biological functions and pathways:
 - Prediction of target genes
